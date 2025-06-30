@@ -4,6 +4,7 @@
   flex-direction: column;
   background: #f8f9fa;
   overflow: hidden;
+  min-height: 0; /* Критично важливо для flex */
 }
 
 .visual-editor.dark .canvas-wrapper {
@@ -58,6 +59,8 @@
   background: #ffffff;
   transition: all 0.3s ease;
   transform-origin: top left;
+  min-height: 0; /* Дозволяє canvas займати доступну висоту */
+  contain: layout; /* Покращує перформанс */
 }
 
 .visual-editor.dark .canvas {
@@ -81,19 +84,29 @@
   background-color: rgba(0, 122, 255, 0.05);
 }
 
+/* Важливо: canvas-content має адаптуватися до zoom без впливу на viewport */
 .canvas-content {
   min-height: 100%;
   padding: 20px;
+  position: relative;
+  /* НЕ встановлюємо width: це дозволяє елементам адаптуватися */
+  /* НЕ встановлюємо fixed height: це дозволяє контенту рости природно */
 }
 
+/* Placeholder показується коли немає елементів */
 .canvas-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 60vh;
+  min-height: 60vh; /* Використовуємо min-height замість height */
   text-align: center;
   color: #8e8e93;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
 }
 
 .visual-editor.dark .canvas-placeholder {
@@ -134,7 +147,7 @@
   }
   
   .canvas-placeholder {
-    height: 40vh;
+    min-height: 40vh;
   }
   
   .placeholder-icon {

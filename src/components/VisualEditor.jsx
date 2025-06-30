@@ -4,6 +4,7 @@ import Toolbox from './Toolbox/Toolbox';
 import EditorCanvas from './Canvas/EditorCanvas';
 import SettingsPanel from './Settings/SettingsPanel';
 import DOMTree from './DOMTree/DOMTree';
+import { HTML_ELEMENTS } from '../config/htmlElements';
 import { v4 as uuidv4 } from 'uuid';
 import './VisualEditor.css';
 
@@ -14,28 +15,58 @@ const VisualEditor = () => {
   const [showGrid, setShowGrid] = useState(true);
   const [canvasZoom, setCanvasZoom] = useState(100);
 
-  const addElement = useCallback((elementType, parentId = null) => {
-    // If there's a selected element that can have children, use it as parent
-    const targetParentId = parentId || (
-      selectedElement && 
-      elements.find(el => el.id === selectedElement) &&
-      ['div', 'section', 'nav', 'article'].includes(elements.find(el => el.id === selectedElement).type)
-        ? selectedElement 
-        : null
-    );
+  const addElement = useCallback((elementType, parentId = null, index = null) => {
+    const elementConfig = HTML_ELEMENTS[elementType];
+    if (!elementConfig) {
+      console.warn(`Element type ${elementType} not found in configuration`);
+      return;
+    }
+
+    // Якщо index не вказаний, додаємо в кінець
+    if (index === null) {
+      const siblings = elements.filter(el => el.parentId === parentId);
+      index = siblings.length;
+    }
 
     const newElement = {
       id: uuidv4(),
       type: elementType,
-      parentId: targetParentId,
-      styles: getDefaultStyles(elementType),
-      content: getDefaultContent(elementType),
+      parentId: parentId,
+      styles: { ...elementConfig.defaultStyles },
+      content: elementConfig.defaultContent,
+      attributes: { ...elementConfig.defaultAttributes },
       className: generateBEMClass(elementType)
     };
 
-    setElements(prev => [...prev, newElement]);
+    setElements(prev => {
+      const newElements = [...prev];
+      
+      // Знаходимо правильну позицію для вставки
+      if (parentId) {
+        const siblings = newElements.filter(el => el.parentId === parentId);
+        const insertIndex = newElements.findIndex(el => el.id === siblings[Math.min(index, siblings.length - 1)]?.id);
+        
+        if (insertIndex >= 0) {
+          newElements.splice(insertIndex + 1, 0, newElement);
+        } else {
+          newElements.push(newElement);
+        }
+      } else {
+        // Root level елементи
+        const rootElements = newElements.filter(el => !el.parentId);
+        if (rootElements.length > 0 && index < rootElements.length) {
+          const insertIndex = newElements.findIndex(el => el.id === rootElements[index].id);
+          newElements.splice(insertIndex, 0, newElement);
+        } else {
+          newElements.push(newElement);
+        }
+      }
+      
+      return newElements;
+    });
+
     setSelectedElement(newElement.id);
-  }, [selectedElement, elements]);
+  }, [elements]);
 
   const updateElement = useCallback((elementId, updates) => {
     setElements(prev => 
@@ -49,7 +80,7 @@ const VisualEditor = () => {
 
   const deleteElement = useCallback((elementId) => {
     setElements(prev => {
-      // Remove element and all its children recursively
+      // Рекурсивно видаляємо елемент та всіх його дітей
       const toRemove = new Set([elementId]);
       const findChildren = (id) => {
         prev.forEach(el => {
@@ -70,13 +101,47 @@ const VisualEditor = () => {
   }, [selectedElement]);
 
   const moveElement = useCallback((elementId, newParentId) => {
-    setElements(prev => 
-      prev.map(el => 
+    setElements(prev => {
+      const element = prev.find(el => el.id === elementId);
+      if (!element) return prev;
+
+      // Перевіряємо чи не намагаємося перемістити елемент в себе або в свого нащадка
+      const isDescendant = (parentId, targetId) => {
+        const parent = prev.find(el => el.id === parentId);
+        if (!parent) return false;
+        if (parent.id === targetId) return true;
+        return parent.parentId ? isDescendant(parent.parentId, targetId) : false;
+      };
+
+      if (newParentId && isDescendant(newParentId, elementId)) {
+        console.warn('Cannot move element into its descendant');
+        return prev;
+      }
+
+      // Оновлюємо елемент
+      const updatedElements = prev.map(el => 
         el.id === elementId 
           ? { ...el, parentId: newParentId }
           : el
-      )
-    );
+      );
+
+      // Сортуємо елементи для правильного порядку
+      const sortElements = (elements) => {
+        const result = [];
+        const rootElements = elements.filter(el => !el.parentId);
+        
+        const addElementWithChildren = (element) => {
+          result.push(element);
+          const children = elements.filter(el => el.parentId === element.id);
+          children.forEach(addElementWithChildren);
+        };
+        
+        rootElements.forEach(addElementWithChildren);
+        return result;
+      };
+
+      return sortElements(updatedElements);
+    });
   }, []);
 
   const exportProject = useCallback(() => {
@@ -84,12 +149,25 @@ const VisualEditor = () => {
     const css = generateCSS(elements);
     
     const htmlContent = `<!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generated Page</title>
     <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
+        }
+        
+        /* Generated styles */
 ${css}
     </style>
 </head>
@@ -140,6 +218,7 @@ ${html}
             onSelectElement={setSelectedElement}
             onDeleteElement={deleteElement}
             onUpdateElement={updateElement}
+            onMoveElement={moveElement}
           />
           
           <SettingsPanel
@@ -153,162 +232,79 @@ ${html}
 };
 
 // Helper functions
-function getDefaultStyles(elementType) {
-  const baseStyles = {
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '16px',
-    margin: '0px',
-    backgroundColor: 'transparent',
-    border: 'none',
-    borderRadius: '0px',
-    fontSize: '16px',
-    fontFamily: 'inherit',
-    color: '#1d1d1f',
-    width: 'auto',
-    height: 'auto',
-    minWidth: '0px',
-    minHeight: '0px',
-    position: 'static',
-    top: '0px',
-    right: '0px',
-    bottom: '0px',
-    left: '0px',
-    zIndex: '0'
-  };
-
-  switch (elementType) {
-    case 'button':
-      return {
-        ...baseStyles,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#007AFF',
-        color: '#ffffff',
-        border: 'none',
-        borderRadius: '8px',
-        padding: '12px 24px',
-        cursor: 'pointer',
-        fontSize: '16px',
-        fontWeight: '500',
-        width: 'auto',
-        height: 'auto'
-      };
-    case 'text':
-      return {
-        ...baseStyles,
-        display: 'block',
-        padding: '8px',
-        width: 'auto',
-        height: 'auto'
-      };
-    case 'img':
-      return {
-        ...baseStyles,
-        display: 'block',
-        width: '200px',
-        height: '150px',
-        objectFit: 'cover',
-        padding: '0px'
-      };
-    case 'input':
-      return {
-        ...baseStyles,
-        display: 'block',
-        border: '1px solid #d1d1d6',
-        borderRadius: '8px',
-        padding: '12px 16px',
-        fontSize: '16px',
-        width: '200px',
-        height: 'auto'
-      };
-    default:
-      return {
-        ...baseStyles,
-        minHeight: '50px'
-      };
-  }
-}
-
-function getDefaultContent(elementType) {
-  switch (elementType) {
-    case 'text':
-      return 'Текст';
-    case 'button':
-      return 'Кнопка';
-    case 'img':
-      return 'https://images.pexels.com/photos/1591056/pexels-photo-1591056.jpeg?auto=compress&cs=tinysrgb&w=400';
-    case 'input':
-      return 'Введіть текст';
-    default:
-      return '';
-  }
-}
-
 function generateBEMClass(elementType) {
-  return `${elementType}`;
+  const timestamp = Date.now().toString(36);
+  return `${elementType}-${timestamp}`;
 }
 
 function generateHTML(elements) {
   const rootElements = elements.filter(el => !el.parentId);
   
-  const renderElement = (element) => {
+  const renderElement = (element, indent = 0) => {
+    const spacing = '  '.repeat(indent);
+    const elementConfig = HTML_ELEMENTS[element.type];
     const children = elements.filter(el => el.parentId === element.id);
-    const childrenHTML = children.map(renderElement).join('\n    ');
     
-    const tag = getHTMLTag(element.type);
+    const tag = element.type;
     const attributes = getHTMLAttributes(element);
     
-    if (element.type === 'img') {
-      return `  <${tag} ${attributes} />`;
+    // Self-closing tags
+    if (['img', 'input', 'br', 'hr'].includes(element.type)) {
+      return `${spacing}<${tag} ${attributes} />`;
     }
     
-    const content = element.type === 'text' ? element.content : '';
+    const content = elementConfig?.canHaveChildren ? '' : (element.content || '');
     const hasChildren = children.length > 0;
     
     if (hasChildren) {
-      return `  <${tag} ${attributes}>
-    ${content}
-    ${childrenHTML}
-  </${tag}>`;
+      const childrenHTML = children.map(child => renderElement(child, indent + 1)).join('\n');
+      return `${spacing}<${tag} ${attributes}>
+${content ? `${spacing}  ${content}\n` : ''}${childrenHTML}
+${spacing}</${tag}>`;
     } else {
-      return `  <${tag} ${attributes}>${content}</${tag}>`;
+      return `${spacing}<${tag} ${attributes}>${content}</${tag}>`;
     }
   };
   
-  return rootElements.map(renderElement).join('\n');
+  return rootElements.map(element => renderElement(element, 1)).join('\n');
 }
 
 function generateCSS(elements) {
   return elements.map(element => {
     const selector = `.${element.className}`;
     const styles = Object.entries(element.styles)
-      .filter(([key, value]) => value && value !== '0px' && value !== 'auto' && value !== 'static')
+      .filter(([key, value]) => {
+        // Фільтруємо пусті та дефолтні значення
+        if (!value || value === 'auto' || value === '0px' || value === 'static') return false;
+        if (key === 'display' && value === 'block') return false;
+        return true;
+      })
       .map(([key, value]) => `  ${camelToKebab(key)}: ${value};`)
       .join('\n');
     
-    return `${selector} {\n${styles}\n}`;
-  }).join('\n\n');
-}
-
-function getHTMLTag(elementType) {
-  switch (elementType) {
-    case 'text': return 'p';
-    case 'button': return 'button';
-    case 'img': return 'img';
-    case 'input': return 'input';
-    default: return elementType;
-  }
+    return styles ? `${selector} {\n${styles}\n}` : '';
+  }).filter(Boolean).join('\n\n');
 }
 
 function getHTMLAttributes(element) {
   let attributes = `class="${element.className}"`;
   
-  if (element.type === 'img') {
-    attributes += ` src="${element.content}" alt="Image"`;
-  } else if (element.type === 'input') {
-    attributes += ` type="text" placeholder="${element.content}"`;
+  // Додаємо специфічні атрибути
+  if (element.attributes) {
+    Object.entries(element.attributes).forEach(([key, value]) => {
+      if (value) {
+        attributes += ` ${key}="${value}"`;
+      }
+    });
+  }
+  
+  // Додаємо content як атрибут для деяких елементів
+  if (element.type === 'img' && element.content) {
+    attributes += ` src="${element.content}"`;
+  } else if (element.type === 'input' && element.content) {
+    attributes += ` placeholder="${element.content}"`;
+  } else if (element.type === 'a' && !element.attributes?.href) {
+    attributes += ` href="#"`;
   }
   
   return attributes;
@@ -326,6 +322,7 @@ function downloadFile(filename, content) {
   document.body.appendChild(element);
   element.click();
   document.body.removeChild(element);
+  URL.revokeObjectURL(element.href);
 }
 
 export default VisualEditor;

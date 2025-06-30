@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -14,17 +15,35 @@ import {
   Layout,
   FileText
 } from 'lucide-react';
+import { HTML_ELEMENTS } from '../../config/htmlElements';
 import './DOMTree.css';
 
 const ELEMENT_ICONS = {
   div: Square,
-  text: Type,
-  button: MousePointer,
-  img: Image,
-  input: FormInput,
   section: Layout,
   nav: Navigation,
-  article: FileText
+  header: Layout,
+  footer: Layout,
+  article: FileText,
+  aside: Layout,
+  main: Layout,
+  h1: Type,
+  h2: Type,
+  h3: Type,
+  p: Type,
+  span: Type,
+  strong: Type,
+  em: Type,
+  button: MousePointer,
+  a: MousePointer,
+  img: Image,
+  input: FormInput,
+  textarea: FormInput,
+  select: FormInput,
+  option: FormInput,
+  ul: Layout,
+  ol: Layout,
+  li: Type
 };
 
 const TreeNode = ({ 
@@ -34,16 +53,96 @@ const TreeNode = ({
   onSelectElement, 
   onDeleteElement,
   onUpdateElement,
+  onMoveElement,
   level = 0 
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [dropPosition, setDropPosition] = useState(null); // 'before', 'after', 'inside'
+  
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: 'TREE_ELEMENT',
+    item: { id: element.id, type: element.type },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'TREE_ELEMENT',
+    hover: (item, monitor) => {
+      if (item.id === element.id) return;
+      
+      const clientOffset = monitor.getClientOffset();
+      const targetRect = monitor.getDropTargetMonitor().getTargetBoundingRect();
+      
+      if (clientOffset && targetRect) {
+        const hoverMiddleY = (targetRect.bottom - targetRect.top) / 2;
+        const hoverClientY = clientOffset.y - targetRect.top;
+        
+        const elementConfig = HTML_ELEMENTS[element.type];
+        const canHaveChildren = elementConfig?.canHaveChildren;
+        
+        if (canHaveChildren) {
+          const topThreshold = hoverMiddleY * 0.25;
+          const bottomThreshold = hoverMiddleY * 1.75;
+          
+          if (hoverClientY < topThreshold) {
+            setDropPosition('before');
+          } else if (hoverClientY > bottomThreshold) {
+            setDropPosition('after');
+          } else {
+            setDropPosition('inside');
+          }
+        } else {
+          if (hoverClientY < hoverMiddleY) {
+            setDropPosition('before');
+          } else {
+            setDropPosition('after');
+          }
+        }
+      }
+    },
+    drop: (item, monitor) => {
+      if (!monitor.didDrop() && item.id !== element.id) {
+        const siblings = elements.filter(el => el.parentId === element.parentId);
+        const currentIndex = siblings.findIndex(el => el.id === element.id);
+        
+        if (dropPosition === 'inside') {
+          const elementConfig = HTML_ELEMENTS[element.type];
+          if (elementConfig?.canHaveChildren) {
+            const children = elements.filter(el => el.parentId === element.id);
+            onMoveElement(item.id, element.id, children.length);
+          }
+        } else if (dropPosition === 'before') {
+          onMoveElement(item.id, element.parentId, currentIndex);
+        } else if (dropPosition === 'after') {
+          onMoveElement(item.id, element.parentId, currentIndex + 1);
+        }
+      }
+      setDropPosition(null);
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver({ shallow: true }),
+    }),
+  }));
+  
+  React.useEffect(() => {
+    if (!isOver) {
+      setDropPosition(null);
+    }
+  }, [isOver]);
   
   const children = elements.filter(el => el.parentId === element.id);
   const hasChildren = children.length > 0;
   const isSelected = selectedElement === element.id;
   const isVisible = element.styles?.display !== 'none';
+  const elementConfig = HTML_ELEMENTS[element.type];
   
   const Icon = ELEMENT_ICONS[element.type] || Square;
+
+  // Combine drag and drop refs
+  const ref = React.useRef(null);
+  drag(drop(ref));
 
   const handleToggleExpand = (e) => {
     e.stopPropagation();
@@ -52,7 +151,7 @@ const TreeNode = ({
 
   const handleToggleVisibility = (e) => {
     e.stopPropagation();
-    const newDisplay = isVisible ? 'none' : (element.styles?.display || 'flex');
+    const newDisplay = isVisible ? 'none' : (elementConfig?.defaultStyles?.display || 'block');
     onUpdateElement(element.id, {
       styles: {
         ...element.styles,
@@ -72,10 +171,51 @@ const TreeNode = ({
     onSelectElement(element.id);
   };
 
+  const getDropIndicatorStyle = () => {
+    if (!isOver || !dropPosition) return null;
+    
+    const baseStyle = {
+      position: 'absolute',
+      left: `${level * 20 + 8}px`,
+      right: '8px',
+      height: '2px',
+      backgroundColor: '#007AFF',
+      zIndex: 1000,
+      pointerEvents: 'none'
+    };
+    
+    if (dropPosition === 'before') {
+      return { ...baseStyle, top: '0px' };
+    } else if (dropPosition === 'after') {
+      return { ...baseStyle, bottom: '0px' };
+    } else if (dropPosition === 'inside') {
+      return {
+        position: 'absolute',
+        left: `${level * 20 + 8}px`,
+        right: '8px',
+        top: '2px',
+        bottom: '2px',
+        backgroundColor: 'rgba(0, 122, 255, 0.1)',
+        border: '1px dashed #007AFF',
+        borderRadius: '3px',
+        zIndex: 1000,
+        pointerEvents: 'none'
+      };
+    }
+    
+    return null;
+  };
+
+  const dropIndicatorStyle = getDropIndicatorStyle();
+
   return (
-    <div className="tree-node">
+    <div className={`tree-node ${isDragging ? 'dragging' : ''}`} style={{ position: 'relative' }}>
+      {/* Drop indicator */}
+      {dropIndicatorStyle && <div style={dropIndicatorStyle} />}
+      
       <div 
-        className={`tree-node-content ${isSelected ? 'selected' : ''} ${!isVisible ? 'hidden' : ''}`}
+        ref={ref}
+        className={`tree-node-content ${isSelected ? 'selected' : ''} ${!isVisible ? 'hidden' : ''} group`}
         style={{ paddingLeft: `${level * 20 + 12}px` }}
         onClick={handleSelect}
       >
@@ -99,7 +239,7 @@ const TreeNode = ({
           {element.className && (
             <span className="tree-node-class">.{element.className}</span>
           )}
-          {element.content && element.type !== 'img' && (
+          {element.content && !elementConfig?.canHaveChildren && (
             <span className="tree-node-content-preview">
               "{element.content.slice(0, 20)}{element.content.length > 20 ? '...' : ''}"
             </span>
@@ -138,6 +278,7 @@ const TreeNode = ({
               onSelectElement={onSelectElement}
               onDeleteElement={onDeleteElement}
               onUpdateElement={onUpdateElement}
+              onMoveElement={onMoveElement}
               level={level + 1}
             />
           ))}
@@ -152,9 +293,24 @@ const DOMTree = ({
   selectedElement, 
   onSelectElement, 
   onDeleteElement,
-  onUpdateElement 
+  onUpdateElement,
+  onMoveElement 
 }) => {
   const rootElements = elements.filter(el => !el.parentId);
+
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: 'TREE_ELEMENT',
+    drop: (item, monitor) => {
+      if (!monitor.didDrop()) {
+        // Переміщуємо на root рівень
+        const rootElements = elements.filter(el => !el.parentId);
+        onMoveElement(item.id, null, rootElements.length);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver({ shallow: true }),
+    }),
+  }));
 
   return (
     <div className="dom-tree">
@@ -165,7 +321,7 @@ const DOMTree = ({
         </div>
       </div>
 
-      <div className="dom-tree-content">
+      <div ref={drop} className="dom-tree-content" style={{ position: 'relative' }}>
         {rootElements.length === 0 ? (
           <div className="tree-empty">
             <div className="empty-icon">🌳</div>
@@ -183,8 +339,19 @@ const DOMTree = ({
                 onSelectElement={onSelectElement}
                 onDeleteElement={onDeleteElement}
                 onUpdateElement={onUpdateElement}
+                onMoveElement={onMoveElement}
               />
             ))}
+            
+            {/* Drop zone для root рівня */}
+            {isOver && (
+              <div style={{
+                height: '3px',
+                backgroundColor: '#007AFF',
+                margin: '4px 8px',
+                borderRadius: '2px'
+              }} />
+            )}
           </div>
         )}
       </div>

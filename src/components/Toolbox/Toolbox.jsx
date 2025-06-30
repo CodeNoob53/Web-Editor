@@ -10,18 +10,20 @@ import {
   Layout,
   FileText
 } from 'lucide-react';
+import { HTML_ELEMENTS, ELEMENT_GROUPS } from '../../config/htmlElements';
 import './Toolbox.css';
 
-const ELEMENT_TYPES = [
-  { type: 'div', label: 'Контейнер', icon: Square, description: 'Базовий блок' },
-  { type: 'text', label: 'Текст', icon: Type, description: 'Текстовий елемент' },
-  { type: 'button', label: 'Кнопка', icon: MousePointer, description: 'Інтерактивна кнопка' },
-  { type: 'img', label: 'Зображення', icon: Image, description: 'Картинка' },
-  { type: 'input', label: 'Поле вводу', icon: FormInput, description: 'Текстове поле' },
-  { type: 'section', label: 'Секція', icon: Layout, description: 'Семантична секція' },
-  { type: 'nav', label: 'Навігація', icon: Navigation, description: 'Меню навігації' },
-  { type: 'article', label: 'Стаття', icon: FileText, description: 'Контентний блок' }
-];
+// Маппінг іконок
+const ICON_MAP = {
+  Square,
+  Type,
+  Image,
+  MousePointer,
+  FormInput,
+  Navigation,
+  Layout,
+  FileText
+};
 
 const DraggableElement = ({ elementType, onAddElement }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -30,7 +32,7 @@ const DraggableElement = ({ elementType, onAddElement }) => {
     end: (item, monitor) => {
       const dropResult = monitor.getDropResult();
       if (item && dropResult) {
-        onAddElement(item.elementType, dropResult.parentId);
+        onAddElement(item.elementType, dropResult.parentId, dropResult.index);
       }
     },
     collect: (monitor) => ({
@@ -38,22 +40,24 @@ const DraggableElement = ({ elementType, onAddElement }) => {
     }),
   }));
 
-  const element = ELEMENT_TYPES.find(el => el.type === elementType);
-  const Icon = element.icon;
+  const elementConfig = HTML_ELEMENTS[elementType];
+  if (!elementConfig) return null;
+
+  const IconComponent = ICON_MAP[elementConfig.icon] || Square;
 
   return (
     <div
       ref={drag}
       className={`toolbox-item ${isDragging ? 'dragging' : ''}`}
       onClick={() => onAddElement(elementType)}
-      title={element.description}
+      title={elementConfig.description}
     >
       <div className="toolbox-item-icon">
-        <Icon size={20} />
+        <IconComponent size={20} />
       </div>
       <div className="toolbox-item-content">
-        <div className="toolbox-item-label">{element.label}</div>
-        <div className="toolbox-item-description">{element.description}</div>
+        <div className="toolbox-item-label">{elementConfig.label}</div>
+        <div className="toolbox-item-description">{elementConfig.description}</div>
       </div>
     </div>
   );
@@ -68,44 +72,20 @@ const Toolbox = ({ onAddElement }) => {
       </div>
       
       <div className="toolbox-content">
-        <div className="toolbox-section">
-          <div className="toolbox-section-title">Базові</div>
-          <div className="toolbox-items">
-            {ELEMENT_TYPES.slice(0, 4).map(element => (
-              <DraggableElement
-                key={element.type}
-                elementType={element.type}
-                onAddElement={onAddElement}
-              />
-            ))}
+        {Object.entries(ELEMENT_GROUPS).map(([groupKey, group]) => (
+          <div key={groupKey} className="toolbox-section">
+            <div className="toolbox-section-title">{group.title}</div>
+            <div className="toolbox-items">
+              {group.elements.map(elementType => (
+                <DraggableElement
+                  key={elementType}
+                  elementType={elementType}
+                  onAddElement={onAddElement}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-
-        <div className="toolbox-section">
-          <div className="toolbox-section-title">Форми</div>
-          <div className="toolbox-items">
-            {ELEMENT_TYPES.slice(4, 5).map(element => (
-              <DraggableElement
-                key={element.type}
-                elementType={element.type}
-                onAddElement={onAddElement}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="toolbox-section">
-          <div className="toolbox-section-title">Семантичні</div>
-          <div className="toolbox-items">
-            {ELEMENT_TYPES.slice(5).map(element => (
-              <DraggableElement
-                key={element.type}
-                elementType={element.type}
-                onAddElement={onAddElement}
-              />
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );

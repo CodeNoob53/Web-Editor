@@ -4,6 +4,7 @@
   flex-direction: column;
   background: #f5f5f7;
   transition: all 0.3s ease;
+  overflow: hidden; /* Важливо для запобігання overflow */
 }
 
 .visual-editor.dark {
@@ -15,6 +16,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0; /* Важливо для правильного flex поведінки */
 }
 
 .canvas-container {
@@ -22,6 +24,8 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0; /* Запобігає розширенню контейнера */
+  overflow: hidden;
 }
 
 .right-panel {
@@ -31,11 +35,65 @@
   border-left: 1px solid #d1d1d6;
   background: #ffffff;
   transition: all 0.3s ease;
+  overflow: hidden; /* Запобігає overflow панелі */
 }
 
 .visual-editor.dark .right-panel {
   border-left-color: #38383a;
   background: #2c2c2e;
+}
+
+/* Canvas area має займати всю доступну площу */
+.canvas-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.visual-editor.dark .canvas-wrapper {
+  background: #1c1c1e;
+}
+
+.canvas {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  transform-origin: top left;
+  min-height: 0; /* Дозволяє canvas скорочуватися */
+}
+
+.visual-editor.dark .canvas {
+  background: #000000;
+}
+
+/* Фіксована висота для toolbar елементів */
+.canvas-toolbar {
+  height: 48px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e5ea;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.visual-editor.dark .canvas-toolbar {
+  background: #2c2c2e;
+  border-bottom-color: #38383a;
+}
+
+/* Контент canvas має правильно поводитися з zoom */
+.canvas-content {
+  min-height: 100%;
+  padding: 20px;
+  position: relative;
+  /* Важливо: не встановлюємо фіксовану висоту */
 }
 
 /* Responsive design */
