@@ -1,0 +1,126 @@
+.canvas-element {
+  position: relative;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.canvas-element:hover {
+  outline: 2px solid rgba(0, 122, 255, 0.3);
+  outline-offset: -2px;
+}
+
+.canvas-element.selected {
+  outline: 2px solid #007AFF;
+  outline-offset: -2px;
+}
+
+.canvas-element.drop-target {
+  background-color: rgba(0, 122, 255, 0.1);
+}
+
+.element-overlay {
+  position: absolute;
+  top: -32px;
+  left: 0;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.element-label {
+  background: #007AFF;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.element-controls {
+  display: flex;
+  gap: 2px;
+  pointer-events: all;
+}
+
+.position-control {
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border: 1px solid #007AFF;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #007AFF;
+  transition: all 0.2s ease;
+}
+
+.position-control:hover {
+  background: #007AFF;
+  color: white;
+}
+
+.position-control:active {
+  transform: scale(0.95);
+}
+
+.drop-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 122, 255, 0.1);
+  border: 2px dashed #007AFF;
+  border-radius: 8px;
+  padding: 20px;
+  color: #007AFF;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Element type specific styles */
+.canvas-element[data-element-type="text"] {
+  cursor: text;
+}
+
+.canvas-element[data-element-type="button"] {
+  cursor: pointer;
+}
+
+.canvas-element[data-element-type="img"] {
+  overflow: hidden;
+}
+
+.canvas-element[data-element-type="input"] {
+  cursor: text;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .element-overlay {
+    top: -28px;
+  }
+  
+  .element-label {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  
+  .position-control {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+  
+  .drop-placeholder {
+    padding: 16px;
+    font-size: 14px;
+  }
+}

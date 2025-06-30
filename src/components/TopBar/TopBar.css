@@ -1,0 +1,161 @@
+.top-bar {
+  height: 60px;
+  background: #ffffff;
+  border-bottom: 1px solid #d1d1d6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: relative;
+  z-index: 100;
+  transition: all 0.3s ease;
+}
+
+.visual-editor.dark .top-bar {
+  background: #2c2c2e;
+  border-bottom-color: #38383a;
+}
+
+.top-bar-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.top-bar-section.center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 18px;
+  color: #1d1d1f;
+}
+
+.visual-editor.dark .logo {
+  color: #f2f2f7;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #007AFF, #5856D6);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: white;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f2f2f7;
+  border-radius: 8px;
+  padding: 4px;
+  transition: all 0.3s ease;
+}
+
+.visual-editor.dark .tool-group {
+  background: #3a3a3c;
+}
+
+.tool-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1d1d1f;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.visual-editor.dark .tool-button {
+  color: #f2f2f7;
+}
+
+.tool-button:hover {
+  background: #e5e5ea;
+  transform: translateY(-1px);
+}
+
+.visual-editor.dark .tool-button:hover {
+  background: #48484a;
+}
+
+.tool-button.active {
+  background: #007AFF;
+  color: #ffffff;
+}
+
+.tool-button.active:hover {
+  background: #0056CC;
+}
+
+.tool-button.primary {
+  background: #007AFF;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.tool-button.primary:hover {
+  background: #0056CC;
+  transform: translateY(-1px);
+}
+
+.zoom-display {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1d1d1f;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  min-width: 50px;
+  text-align: center;
+}
+
+.visual-editor.dark .zoom-display {
+  color: #f2f2f7;
+}
+
+.zoom-display:hover {
+  background: #e5e5ea;
+}
+
+.visual-editor.dark .zoom-display:hover {
+  background: #48484a;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .top-bar {
+    padding: 0 16px;
+  }
+  
+  .top-bar-section.center {
+    position: static;
+    transform: none;
+  }
+  
+  .tool-button span {
+    display: none;
+  }
+  
+  .logo span {
+    display: none;
+  }
+}

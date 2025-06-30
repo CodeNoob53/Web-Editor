@@ -1,0 +1,151 @@
+.canvas-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+  overflow: hidden;
+}
+
+.visual-editor.dark .canvas-wrapper {
+  background: #1c1c1e;
+}
+
+.canvas-toolbar {
+  height: 48px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e5ea;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.visual-editor.dark .canvas-toolbar {
+  background: #2c2c2e;
+  border-bottom-color: #38383a;
+}
+
+.canvas-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.canvas-info span:first-child {
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.visual-editor.dark .canvas-info span:first-child {
+  color: #f2f2f7;
+}
+
+.element-count {
+  color: #8e8e93;
+  font-size: 13px;
+}
+
+.visual-editor.dark .element-count {
+  color: #98989d;
+}
+
+.canvas {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background: #ffffff;
+  transition: all 0.3s ease;
+  transform-origin: top left;
+}
+
+.visual-editor.dark .canvas {
+  background: #000000;
+}
+
+.canvas.show-grid {
+  background-image: 
+    linear-gradient(rgba(0, 122, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 122, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.visual-editor.dark .canvas.show-grid {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+}
+
+.canvas.drag-over {
+  background-color: rgba(0, 122, 255, 0.05);
+}
+
+.canvas-content {
+  min-height: 100%;
+  padding: 20px;
+}
+
+.canvas-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  text-align: center;
+  color: #8e8e93;
+}
+
+.visual-editor.dark .canvas-placeholder {
+  color: #98989d;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.canvas-placeholder h3 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1d1d1f;
+}
+
+.visual-editor.dark .canvas-placeholder h3 {
+  color: #f2f2f7;
+}
+
+.canvas-placeholder p {
+  font-size: 16px;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .canvas-toolbar {
+    padding: 0 16px;
+  }
+  
+  .canvas-content {
+    padding: 16px;
+  }
+  
+  .canvas-placeholder {
+    height: 40vh;
+  }
+  
+  .placeholder-icon {
+    font-size: 36px;
+  }
+  
+  .canvas-placeholder h3 {
+    font-size: 20px;
+  }
+  
+  .canvas-placeholder p {
+    font-size: 14px;
+  }
+}
