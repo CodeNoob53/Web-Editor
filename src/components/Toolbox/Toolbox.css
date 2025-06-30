@@ -6,6 +6,7 @@
   flex-direction: column;
   overflow: hidden;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .visual-editor.dark .toolbox {
@@ -16,6 +17,7 @@
 .toolbox-header {
   padding: 20px 20px 16px;
   border-bottom: 1px solid #f2f2f7;
+  flex-shrink: 0;
 }
 
 .visual-editor.dark .toolbox-header {
@@ -42,6 +44,68 @@
   color: #98989d;
 }
 
+/* Інформація про цільовий контейнер */
+.target-info {
+  padding: 12px 20px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e5ea;
+  flex-shrink: 0;
+}
+
+.visual-editor.dark .target-info {
+  background: #1c1c1e;
+  border-bottom-color: #38383a;
+}
+
+.target-info-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.target-info-icon {
+  color: #007AFF;
+  flex-shrink: 0;
+}
+
+.visual-editor.dark .target-info-icon {
+  color: #0A84FF;
+}
+
+.target-info-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.visual-editor.dark .target-info-text {
+  color: #f2f2f7;
+}
+
+.target-element {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #007AFF;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.target-element-tag {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.target-element-class {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
 .toolbox-content {
   flex: 1;
   overflow-y: auto;
@@ -50,6 +114,10 @@
 
 .toolbox-section {
   margin-bottom: 24px;
+}
+
+.toolbox-section:last-child {
+  margin-bottom: 16px;
 }
 
 .toolbox-section-title {
@@ -80,6 +148,7 @@
   transition: all 0.2s ease;
   border-radius: 0;
   user-select: none;
+  position: relative;
 }
 
 .toolbox-item:hover {
@@ -91,9 +160,14 @@
   background: #3a3a3c;
 }
 
-.toolbox-item.dragging {
+.toolbox-item.disabled {
   opacity: 0.5;
-  transform: rotate(2deg);
+  cursor: not-allowed;
+}
+
+.toolbox-item.disabled:hover {
+  background: transparent;
+  transform: none;
 }
 
 .toolbox-item-icon {
@@ -114,7 +188,7 @@
   color: #f2f2f7;
 }
 
-.toolbox-item:hover .toolbox-item-icon {
+.toolbox-item:hover:not(.disabled) .toolbox-item-icon {
   background: linear-gradient(135deg, #007AFF, #5856D6);
   color: #ffffff;
   transform: scale(1.05);
@@ -157,6 +231,10 @@
   
   .visual-editor.dark .toolbox {
     border-bottom-color: #38383a;
+  }
+  
+  .target-info {
+    display: none; /* Ховаємо на мобільних для економії місця */
   }
   
   .toolbox-content {

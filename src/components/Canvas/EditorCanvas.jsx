@@ -1,5 +1,4 @@
 import React from 'react';
-import { useDrop } from 'react-dnd';
 import CanvasElement from './CanvasElement';
 import './EditorCanvas.css';
 
@@ -8,30 +7,9 @@ const EditorCanvas = ({
   selectedElement,
   onSelectElement,
   onUpdateElement,
-  onAddElement,
-  onMoveElement,
   showGrid,
   zoom
 }) => {
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: ['ELEMENT', 'CANVAS_ELEMENT'],
-    drop: (item, monitor) => {
-      if (!monitor.didDrop()) {
-        if (item.elementType) {
-          // Новий елемент з toolbox
-          return { parentId: null, index: 0 };
-        } else if (item.id) {
-          // Переміщення існуючого елемента на root рівень
-          const rootElements = elements.filter(el => !el.parentId);
-          onMoveElement(item.id, null, rootElements.length);
-        }
-      }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver({ shallow: true }),
-    }),
-  }));
-
   const rootElements = elements.filter(el => !el.parentId);
 
   const handleCanvasClick = (e) => {
@@ -47,7 +25,6 @@ const EditorCanvas = ({
   const canvasStyle = {
     transform: `scale(${zoom / 100})`,
     transformOrigin: 'top left',
-    // Не встановлюємо фіксовані розміри - дозволяємо canvas адаптуватися
   };
 
   return (
@@ -63,8 +40,7 @@ const EditorCanvas = ({
       </div>
       
       <div 
-        ref={drop}
-        className={`canvas ${showGrid ? 'show-grid' : ''} ${isOver ? 'drag-over' : ''}`}
+        className={`canvas ${showGrid ? 'show-grid' : ''}`}
         style={canvasStyle}
         onClick={handleCanvasClick}
       >
@@ -73,11 +49,11 @@ const EditorCanvas = ({
             <div className="canvas-placeholder">
               <div className="placeholder-icon">📐</div>
               <h3>Почніть створювати</h3>
-              <p>Перетягніть елементи з панелі інструментів або клікніть на них</p>
+              <p>Виберіть контейнер і клікніть на елемент в панелі інструментів</p>
             </div>
           ) : (
             <>
-              {rootElements.map((element, index) => (
+              {rootElements.map((element) => (
                 <CanvasElement
                   key={element.id}
                   element={element}
@@ -85,35 +61,10 @@ const EditorCanvas = ({
                   isSelected={selectedElement === element.id}
                   onSelect={onSelectElement}
                   onUpdate={onUpdateElement}
-                  onAddElement={onAddElement}
-                  onMove={onMoveElement}
-                  index={index}
+                  level={0}
                 />
               ))}
             </>
-          )}
-          
-          {/* Drop zone indicator коли перетягуємо */}
-          {isOver && rootElements.length > 0 && (
-            <div style={{
-              position: 'absolute',
-              bottom: '20px',
-              left: '20px',
-              right: '20px',
-              height: '60px',
-              border: '2px dashed #007AFF',
-              borderRadius: '8px',
-              backgroundColor: 'rgba(0, 122, 255, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#007AFF',
-              fontWeight: '500',
-              pointerEvents: 'none',
-              zIndex: 10
-            }}>
-              Відпустіть тут щоб додати в кінець
-            </div>
           )}
         </div>
       </div>

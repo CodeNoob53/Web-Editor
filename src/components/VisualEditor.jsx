@@ -22,51 +22,39 @@ const VisualEditor = () => {
       return;
     }
 
-    // Якщо index не вказаний, додаємо в кінець
+    // Визначаємо куди додавати елемент
+    let targetParentId = parentId;
+    
+    // Якщо parentId не вказаний, перевіряємо чи є активний елемент
+    if (!targetParentId && selectedElement) {
+      const selectedElementData = elements.find(el => el.id === selectedElement);
+      const selectedConfig = selectedElementData ? HTML_ELEMENTS[selectedElementData.type] : null;
+      
+      // Якщо обраний елемент може мати дітей, додаємо в нього
+      if (selectedConfig?.canHaveChildren) {
+        targetParentId = selectedElement;
+      }
+    }
+
+    // Визначаємо індекс для вставки
     if (index === null) {
-      const siblings = elements.filter(el => el.parentId === parentId);
+      const siblings = elements.filter(el => el.parentId === targetParentId);
       index = siblings.length;
     }
 
     const newElement = {
       id: uuidv4(),
       type: elementType,
-      parentId: parentId,
+      parentId: targetParentId,
       styles: { ...elementConfig.defaultStyles },
       content: elementConfig.defaultContent,
-      attributes: { ...elementConfig.defaultAttributes },
+      attributes: elementConfig.defaultAttributes ? { ...elementConfig.defaultAttributes } : {},
       className: generateBEMClass(elementType)
     };
 
-    setElements(prev => {
-      const newElements = [...prev];
-      
-      // Знаходимо правильну позицію для вставки
-      if (parentId) {
-        const siblings = newElements.filter(el => el.parentId === parentId);
-        const insertIndex = newElements.findIndex(el => el.id === siblings[Math.min(index, siblings.length - 1)]?.id);
-        
-        if (insertIndex >= 0) {
-          newElements.splice(insertIndex + 1, 0, newElement);
-        } else {
-          newElements.push(newElement);
-        }
-      } else {
-        // Root level елементи
-        const rootElements = newElements.filter(el => !el.parentId);
-        if (rootElements.length > 0 && index < rootElements.length) {
-          const insertIndex = newElements.findIndex(el => el.id === rootElements[index].id);
-          newElements.splice(insertIndex, 0, newElement);
-        } else {
-          newElements.push(newElement);
-        }
-      }
-      
-      return newElements;
-    });
-
+    setElements(prev => [...prev, newElement]);
     setSelectedElement(newElement.id);
-  }, [elements]);
+  }, [elements, selectedElement]);
 
   const updateElement = useCallback((elementId, updates) => {
     setElements(prev => 
@@ -107,6 +95,7 @@ const VisualEditor = () => {
 
       // Перевіряємо чи не намагаємося перемістити елемент в себе або в свого нащадка
       const isDescendant = (parentId, targetId) => {
+        if (!parentId) return false;
         const parent = prev.find(el => el.id === parentId);
         if (!parent) return false;
         if (parent.id === targetId) return true;
@@ -119,28 +108,11 @@ const VisualEditor = () => {
       }
 
       // Оновлюємо елемент
-      const updatedElements = prev.map(el => 
+      return prev.map(el => 
         el.id === elementId 
           ? { ...el, parentId: newParentId }
           : el
       );
-
-      // Сортуємо елементи для правильного порядку
-      const sortElements = (elements) => {
-        const result = [];
-        const rootElements = elements.filter(el => !el.parentId);
-        
-        const addElementWithChildren = (element) => {
-          result.push(element);
-          const children = elements.filter(el => el.parentId === element.id);
-          children.forEach(addElementWithChildren);
-        };
-        
-        rootElements.forEach(addElementWithChildren);
-        return result;
-      };
-
-      return sortElements(updatedElements);
     });
   }, []);
 
@@ -196,7 +168,10 @@ ${html}
       />
       
       <div className="editor-content">
-        <Toolbox onAddElement={addElement} />
+        <Toolbox 
+          onAddElement={addElement}
+          selectedElement={selectedElementData}
+        />
         
         <div className="canvas-container">
           <EditorCanvas

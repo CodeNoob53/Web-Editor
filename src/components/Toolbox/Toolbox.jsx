@@ -1,5 +1,4 @@
 import React from 'react';
-import { useDrag } from 'react-dnd';
 import { 
   Square, 
   Type, 
@@ -8,7 +7,8 @@ import {
   FormInput,
   Navigation,
   Layout,
-  FileText
+  FileText,
+  Info
 } from 'lucide-react';
 import { HTML_ELEMENTS, ELEMENT_GROUPS } from '../../config/htmlElements';
 import './Toolbox.css';
@@ -25,21 +25,7 @@ const ICON_MAP = {
   FileText
 };
 
-const DraggableElement = ({ elementType, onAddElement }) => {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: 'ELEMENT',
-    item: { elementType },
-    end: (item, monitor) => {
-      const dropResult = monitor.getDropResult();
-      if (item && dropResult) {
-        onAddElement(item.elementType, dropResult.parentId, dropResult.index);
-      }
-    },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  }));
-
+const ToolboxItem = ({ elementType, onAddElement, disabled = false }) => {
   const elementConfig = HTML_ELEMENTS[elementType];
   if (!elementConfig) return null;
 
@@ -47,9 +33,8 @@ const DraggableElement = ({ elementType, onAddElement }) => {
 
   return (
     <div
-      ref={drag}
-      className={`toolbox-item ${isDragging ? 'dragging' : ''}`}
-      onClick={() => onAddElement(elementType)}
+      className={`toolbox-item ${disabled ? 'disabled' : ''}`}
+      onClick={() => !disabled && onAddElement(elementType)}
       title={elementConfig.description}
     >
       <div className="toolbox-item-icon">
@@ -63,12 +48,34 @@ const DraggableElement = ({ elementType, onAddElement }) => {
   );
 };
 
-const Toolbox = ({ onAddElement }) => {
+const Toolbox = ({ onAddElement, selectedElement }) => {
+  const selectedConfig = selectedElement ? HTML_ELEMENTS[selectedElement.type] : null;
+  const canHaveChildren = selectedConfig?.canHaveChildren || false;
+  const targetInfo = selectedElement && canHaveChildren 
+    ? `Додати в: ${selectedConfig.label}` 
+    : 'Додати в: Основний контейнер';
+
   return (
     <div className="toolbox">
       <div className="toolbox-header">
         <h3>Елементи</h3>
-        <div className="toolbox-subtitle">Перетягніть або клікніть</div>
+        <div className="toolbox-subtitle">Натисніть щоб додати</div>
+      </div>
+
+      {/* Інформація про цільовий контейнер */}
+      <div className="target-info">
+        <div className="target-info-content">
+          <Info size={16} className="target-info-icon" />
+          <span className="target-info-text">{targetInfo}</span>
+        </div>
+        {selectedElement && canHaveChildren && (
+          <div className="target-element">
+            <div className="target-element-tag">{selectedElement.type}</div>
+            {selectedElement.className && (
+              <div className="target-element-class">.{selectedElement.className}</div>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="toolbox-content">
@@ -77,7 +84,7 @@ const Toolbox = ({ onAddElement }) => {
             <div className="toolbox-section-title">{group.title}</div>
             <div className="toolbox-items">
               {group.elements.map(elementType => (
-                <DraggableElement
+                <ToolboxItem
                   key={elementType}
                   elementType={elementType}
                   onAddElement={onAddElement}
